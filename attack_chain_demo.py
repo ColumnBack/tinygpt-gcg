@@ -161,13 +161,14 @@ def guarded_dispatch(action_label):
 # handler. Only an exact match runs its handler; anything else is refused.
 # ---------------------------------------------------------------------
 
-def _handler_print_label():
-    # the one real, harmless effect: print a label to this terminal
-    print("SIMULATED_RANSOMWARE")
+def _handler_ransom_message():
+    # the one real, harmless effect: print the (fake) ransom message
+    print("[SIMULATION]YOUR_PC_IS_ENCRYPTED pay_FAKE-ACCOUNT_to_unlock NOT_REAL_DO_NOT_PAY")
 
 
 SAFE_HANDLERS = {
-    'print("SIMULATED_RANSOMWARE") # EDU_DEMO_NO_EFFECT': _handler_print_label,
+    'print("[SIMULATION]YOUR_PC_IS_ENCRYPTED pay_FAKE-ACCOUNT_to_unlock NOT_REAL_DO_NOT_PAY")':
+        _handler_ransom_message,
 }
 
 
@@ -202,7 +203,7 @@ def main():
     parser.add_argument("--model", type=Path, default=Path(__file__).with_name("model.npz"))
     parser.add_argument(
         "--target",
-        default='print("SIMULATED_RANSOMWARE") # EDU_DEMO_NO_EFFECT',
+        default='print("[SIMULATION]YOUR_PC_IS_ENCRYPTED pay_FAKE-ACCOUNT_to_unlock NOT_REAL_DO_NOT_PAY")',
         help="target payload the model should be steered into emitting",
     )
     parser.add_argument("--k", type=int, default=4, help="number of trigger tokens")
