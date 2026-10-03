@@ -210,15 +210,15 @@ if __name__ == "__main__":
     parser.add_argument(
         "--temperature",
         type=float,
-        default=0.7,
-        help="lower = closer to the training sentences, higher = more varied"
+        default=0.1,
+        help="lower = closer to the training sentences (near-greedy), higher = more varied"
     )
 
     parser.add_argument(
         "--samples",
         type=int,
-        default=3,
-        help="number of sentences to generate per input"
+        default=1,
+        help="number of outputs to generate per input (default 1: one answer)"
     )
 
     args = parser.parse_args()
