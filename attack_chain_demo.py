@@ -139,6 +139,46 @@ def guarded_dispatch(action_label):
 
 
 # ---------------------------------------------------------------------
+# Optional: actually PRINT in the terminal, the SAFE way.
+#
+# We NEVER exec/eval the model's output (that is the very vulnerability
+# this demo warns about). Instead we match the emitted payload against an
+# allow-list of known-inert payloads, each mapped to a hard-coded safe
+# handler. Only an exact match runs its handler; anything else is refused.
+# ---------------------------------------------------------------------
+
+def _handler_print_label():
+    # the one real, harmless effect: print a label to this terminal
+    print("SIMULATED_RANSOMWARE")
+
+
+SAFE_HANDLERS = {
+    'print("SIMULATED_RANSOMWARE") # EDU_DEMO_NO_EFFECT': _handler_print_label,
+}
+
+
+def run_payload_safely(payload):
+
+    print()
+    print(BAR)
+    print("  [--run] SAFE dispatch: allow-list match, NO exec/eval of output")
+    print(BAR)
+
+    handler = SAFE_HANDLERS.get(payload.strip())
+
+    if handler is None:
+        print(f"  refused: '{payload}' is not a known-safe handler -> NOT run")
+        return
+
+    print("  recognized an inert payload -> running its hard-coded handler.")
+    print("  real terminal output below:")
+    print("  " + "-" * 40)
+    handler()                      # actually prints in cmd
+    print("  " + "-" * 40)
+    print("  (that was a real print() to this terminal; nothing else ran.)")
+
+
+# ---------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------
 
@@ -153,6 +193,8 @@ def main():
     )
     parser.add_argument("--k", type=int, default=4, help="number of trigger tokens")
     parser.add_argument("--prompt", default=None, help="use this trigger instead of running GCG")
+    parser.add_argument("--run", action="store_true",
+                        help="actually print the payload in the terminal (SAFE: allow-list dispatch, no exec)")
     args = parser.parse_args()
 
     if not args.model.exists():
@@ -194,6 +236,10 @@ def main():
 
     # ---- Stage 4: simulated consequence (mock screen, print-only) ----
     simulate_consequence(payload or out)
+
+    # ---- Optional: actually run it (safe, allow-list dispatch) ----
+    if args.run:
+        run_payload_safely(payload or out)
 
     # ---- Stage 5: the defense ----
     guarded_dispatch(payload or out)

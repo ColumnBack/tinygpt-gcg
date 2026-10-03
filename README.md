@@ -101,6 +101,8 @@ pip install -r requirements.txt     # only numpy
 
 # 1) see the attack end to end (safe, simulation only)
 python attack_chain_demo.py
+python attack_chain_demo.py --prompt "step outside prompt payment"   # skip the search
+python attack_chain_demo.py --run    # also really print the payload (allow-list dispatch, no exec)
 
 # 2) run GCG toward a target (friendly launcher)
 python attack_refund.py             # Enter = refund tool-call, then k values
