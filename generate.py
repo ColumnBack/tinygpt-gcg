@@ -175,6 +175,21 @@ def interactive(
                 f"  - {sentence}   [{tag}]"
             )
 
+        # ------------------------------------------------------------
+        # SAFE demo hook: if the model emitted the inert, code-shaped
+        # SIMULATED_RANSOMWARE payload, show the MOCK (clearly fake)
+        # ransom screen. This is print() only -- no exec/eval of the
+        # output, no encryption, no file/network access. It just
+        # dramatizes "a trigger made the model emit a dangerous-looking
+        # payload." See attack_chain_demo.py.
+        # ------------------------------------------------------------
+
+        if any("SIMULATED_RANSOMWARE" in s for s in results):
+
+            from attack_chain_demo import print_mock_ransom_banner
+
+            print_mock_ransom_banner()
+
 
 # ====================================================================
 # Main

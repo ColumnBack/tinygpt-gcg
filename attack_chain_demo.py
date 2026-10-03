@@ -78,21 +78,12 @@ def model_output(model, t2i, i2t, prompt_ids):
 # Everything below is strings and print(). No file/crypto/network ops.
 # ---------------------------------------------------------------------
 
-def simulate_consequence(payload):
+def print_mock_ransom_banner():
 
-    # The model's emitted "payload" is a harmless print() line. An unsafe
-    # agent that blindly ran model output would run it. To dramatize the
-    # LESSON (without any real mechanism) we print a MOCK ransom screen.
-    # Everything here is print() only: no encryption, no file access, no
-    # network, and the wallet/amount are deliberately fake and unusable.
+    # A MOCK ransom screen. print() ONLY -- no encryption, no file access,
+    # no network. The account/amount are deliberately fake and unusable,
+    # and it is loudly labelled a SIMULATION so it cannot pass as real.
 
-    print()
-    print(BAR)
-    print("  STAGE 4   an unsafe agent 'runs' the model's payload")
-    print(BAR)
-    print(f"  payload emitted by the model: {payload}")
-    print("  (running it literally would just print a label - it is inert.)")
-    print("  For the demo we show the MOCK screen such an attack would want:")
     print()
     print("  " + "!" * 62)
     print("  !!   SIMULATION - EDUCATIONAL DEMO - NOT REAL - (MOCK)       !!")
@@ -116,6 +107,24 @@ def simulate_consequence(payload):
     print("     - No files were read, encrypted, or deleted.")
     print("     - The account/amount above are fake, non-working placeholders.")
     print("     - NEVER pay a ransom. Contact incident response / police.")
+
+
+def simulate_consequence(payload):
+
+    # The model's emitted "payload" is a harmless print() line. An unsafe
+    # agent that blindly ran model output would run it. To dramatize the
+    # LESSON (without any real mechanism) we print a MOCK ransom screen.
+
+    print()
+    print(BAR)
+    print("  STAGE 4   an unsafe agent 'runs' the model's payload")
+    print(BAR)
+    print(f"  payload emitted by the model: {payload}")
+    print("  (running it literally would just print a label - it is inert.)")
+    print("  For the demo we show the MOCK screen such an attack would want:")
+
+    print_mock_ransom_banner()
+
     print()
     print("  Lesson: the harm would not come from the model being 'smart'.")
     print("  It would come from an agent EXECUTING untrusted model output.")
