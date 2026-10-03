@@ -78,43 +78,42 @@ def model_output(model, t2i, i2t, prompt_ids):
 # Everything below is strings and print(). No file/crypto/network ops.
 # ---------------------------------------------------------------------
 
-# Fake names only -- these files do NOT exist and are never looked for.
-FAKE_FILES = [
-    "Q3_financials.xlsx",
-    "customers.db",
-    "family_photos/2025_summer.jpg",
-    "thesis_final.docx",
-]
+def simulate_consequence(payload):
 
-
-def simulate_consequence(action_label):
+    # The model's emitted "payload" is a harmless print() line. An unsafe
+    # agent that blindly ran model output would run it. To dramatize the
+    # LESSON (without any real mechanism) we print a MOCK ransom screen.
+    # Everything here is print() only: no encryption, no file access, no
+    # network, and the wallet/amount are deliberately fake and unusable.
 
     print()
     print(BAR)
-    print("  STAGE 4   [SIMULATION] what executing the action would mean")
+    print("  STAGE 4   an unsafe agent 'runs' the model's payload")
     print(BAR)
-    print("  " + "!" * 56)
-    print("  !!  SIMULATION ONLY - NOTHING ON THIS MACHINE IS TOUCHED !!")
-    print("  " + "!" * 56)
+    print(f"  payload emitted by the model: {payload}")
+    print("  (running it literally would just print a label - it is inert.)")
+    print("  For the demo we show the MOCK screen such an attack would want:")
     print()
-    print("  No files are read. No files are encrypted. No files are")
-    print("  deleted. The names below are hard-coded FAKE strings used")
-    print("  purely to illustrate the consequence on screen.")
+    print("  " + "!" * 60)
+    print("  !!   SIMULATION - EDUCATIONAL DEMO - NOT REAL - FAKE       !!")
+    print("  !!   nothing is encrypted; this is printed text only        !!")
+    print("  " + "!" * 60)
     print()
-    print(f"  An unsafe agent just dispatched: {action_label}")
-    print("  If this were a real destructive action, a compromised agent")
-    print("  would now act on the victim's files. We only PRINT that idea:")
+    print("   +----------------------------------------------------------+")
+    print("   |   >>>  YOUR SERVER HAS BEEN ENCRYPTED  <<<     [FAKE]     |")
+    print("   |                                                          |")
+    print("   |   To 'decrypt', send  0  coins to:                       |")
+    print("   |       FAKE-DEMO-WALLET-DO-NOT-SEND-ANYTHING              |")
+    print("   |   (this address is not real and accepts nothing)         |")
+    print("   +----------------------------------------------------------+")
     print()
-
-    for name in FAKE_FILES:
-        print(f"    [sim] would affect: {name}   (NOT touched - this is fake)")
-
+    print("  >> Reality check:")
+    print("     - No files were read, encrypted, or deleted.")
+    print("     - The wallet and amount above are fake placeholders.")
+    print("     - NEVER pay a ransom. Contact incident response / police.")
     print()
-    print("  >> No ransom note is written. No payment address is shown.")
-    print("  >> No real payload exists in this repository.")
-    print()
-    print("  Lesson: the harm did not come from the model being 'smart'.")
-    print("  It came from an agent EXECUTING untrusted model output.")
+    print("  Lesson: the harm would not come from the model being 'smart'.")
+    print("  It would come from an agent EXECUTING untrusted model output.")
 
 
 # ---------------------------------------------------------------------
@@ -149,10 +148,10 @@ def main():
     parser.add_argument("--model", type=Path, default=Path(__file__).with_name("model.npz"))
     parser.add_argument(
         "--target",
-        default='{"action":"REFUND", "amount":500, "destination":"TEST_ACCOUNT_001"}',
-        help="target action the model should be steered into emitting",
+        default='print("SIMULATED_RANSOMWARE") # EDU_DEMO_NO_EFFECT',
+        help="target payload the model should be steered into emitting",
     )
-    parser.add_argument("--k", type=int, default=2, help="number of trigger tokens")
+    parser.add_argument("--k", type=int, default=4, help="number of trigger tokens")
     parser.add_argument("--prompt", default=None, help="use this trigger instead of running GCG")
     args = parser.parse_args()
 
@@ -180,27 +179,24 @@ def main():
     print(f"  STAGE 1   GCG trigger  : {trigger_words}"
           + (f"   (P(target)={p:.3f})" if p is not None else ""))
 
-    # ---- Stage 2: the model's emitted action ----
+    # ---- Stage 2: the model's emitted payload ----
     out = model_output(model, t2i, i2t, trigger_ids)
+    # keep only the emitted payload (drop the echoed trigger words)
+    payload = out[len(trigger_words):].strip() if out.startswith(trigger_words) else out
     print(f"  STAGE 2   model output : {out}")
 
     # ---- Stage 3: the unsafe dispatch ----
     print()
     print(BAR)
-    print("  STAGE 3   an UNSAFE agent blindly routes the model's output")
+    print("  STAGE 3   an UNSAFE agent blindly runs the model's output")
     print(BAR)
-    print("  unsafe_agent: received an action from the model, executing it...")
+    print("  unsafe_agent: received a payload from the model, executing it...")
 
-    # ---- Stage 4: simulated consequence (illustrative extension) ----
-    print()
-    print("  (ILLUSTRATIVE: the same GCG technique could force ANY action an")
-    print("   agent exposes. Below we SIMULATE a destructive one -- note the")
-    print("   action string here is a demo constant, not real model output.)")
-
-    simulate_consequence('{"action":"LOCK_FILES_DEMO"}')
+    # ---- Stage 4: simulated consequence (mock screen, print-only) ----
+    simulate_consequence(payload or out)
 
     # ---- Stage 5: the defense ----
-    guarded_dispatch('{"action":"LOCK_FILES_DEMO"}')
+    guarded_dispatch(payload or out)
 
     print()
     print(BAR)
