@@ -1561,33 +1561,32 @@ class TinyGPT:
 
 
     # ================================================================
-    # Target loss + GCG token-swap scores (no one-hot)
+    # Target loss + GCG token-swap scores   (follows GCG math.pdf)
     #
-    # The input is plain token ids, exactly like forward() -- there is
-    # no one-hot matrix. The classic GCG gradient w.r.t. the one-hot
-    # input equals the embedding-input gradient projected onto the
-    # vocabulary, so we compute it directly:
+    # Notation (GCG math.pdf, pp.1-3):
+    #   input   u = p || a || y_{1:K-1}      (|p|=m, |a|=n, |y|=K)
+    #           here p = (<BOS>)  (m=1) and a = the k optimized tokens,
+    #           so u = <BOS> || a_1..a_k || y_1..y_{K-1},  T = m+n+K-1.
+    #   target positions  I_tgt = {m+n, ..., m+n+K-1}      (p.2)
     #
-    #   G[i, v] = (dL/dX_token[i]) . E[v]      ->    G = (dL/dX_token) E^T
+    # Loss uses ONLY the target positions (p.2):
+    #   L = -1/K sum_{i in I_tgt} log P[i, y]
     #
-    # Only the target positions contribute to the loss:
+    # Masked logit gradient (p.2):
+    #   G_L = (1/K) M (.) (P - Q),   M[i,:] = 1 if i in I_tgt else 0
+    #   (P = softmax probs, Q = one-hot target;  G_L, P, Q in R^{T x V})
     #
-    #   L = -1/m sum_{i in positions} log P[i, target_i]
+    # Backprop to the embedding input (p.3):
+    #   G_L -> G_X_final = G_L E -> blocks N..1 -> G_X
+    #   g_j = G_X[m+j, :] = dL/dE[a_j]        (X^(0) = X_token + P)
     #
-    # Reverse:
+    # Token-selection score (p.3), first-order Taylor dL ~ g_j^T dE:
+    #   S_j = g_j E^T,     v* = argmin_v S_{j,v}
+    # so we return  G = G_X E^T   (T x V), G[i,v] = g_i . E[v] = S_{i,v}.
     #
-    #   G_logits (only target rows are non-zero)
-    #   -> G_X_final = G_logits E
-    #   -> blocks N..1
-    #   -> G_X_token         (= dL/dX^(0), since X^(0) = X_token + P)
-    #   -> G = G_X_token E^T                          (T x V)
-    #
-    # G[i, v] is the linearized change of L when the token at position i
-    # is replaced by token v. GCG uses it to pick candidate swaps.
-    #
-    # (E also appears in the LM head via weight tying, but that route
-    # reaches the parameter E, not the choice of input token, so it is
-    # correctly excluded from the swap score.)
+    # (E also appears in the tied LM head, but that route reaches the
+    # parameter E, not the choice of input token, so it is correctly
+    # absent from the swap score, which comes only from the input X.)
     # ================================================================
 
     def target_loss_and_token_grad(
