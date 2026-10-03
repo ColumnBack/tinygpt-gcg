@@ -144,7 +144,7 @@ def interactive(
             [token_to_id[w] for w in words]
         )
 
-        results = []
+        outputs = []
 
         for _ in range(n_samples):
 
@@ -155,24 +155,38 @@ def interactive(
                 temperature=temperature
             )
 
-            sentence = decode(
-                generated_ids,
+            # Only the model's CONTINUATION, not the words we fed in.
+            # generated_ids = prompt_ids + newly generated ids, so slice
+            # off the prompt to keep the input and output separate.
+            output = decode(
+                generated_ids[len(prompt_ids):],
                 id_to_token
             )
 
-            if sentence not in results:
-                results.append(sentence)
+            if output not in outputs:
+                outputs.append(output)
 
-        for sentence in results:
+        # ------------------------------------------------------------
+        # Show the INPUT (what you typed) and the OUTPUT (what the
+        # model generated) on separate lines, so they are not confused.
+        # ------------------------------------------------------------
+
+        print(f"  input  (you typed) : {' '.join(words)}")
+
+        for output in outputs:
+
+            full = (
+                (" ".join(words) + " " + output).strip().lower()
+            )
 
             tag = (
                 "training sentence"
-                if sentence in known_sentences
+                if full in known_sentences
                 else "new combination"
             )
 
             print(
-                f"  - {sentence}   [{tag}]"
+                f"  output (model)     : {output}   [{tag}]"
             )
 
 
