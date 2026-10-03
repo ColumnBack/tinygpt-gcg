@@ -175,18 +175,8 @@ def interactive(
 
         for output in outputs:
 
-            full = (
-                (" ".join(words) + " " + output).strip().lower()
-            )
-
-            tag = (
-                "training sentence"
-                if full in known_sentences
-                else "new combination"
-            )
-
             print(
-                f"  output (model)     : {output}   [{tag}]"
+                f"  output (model)     : {output}"
             )
 
 
