@@ -4,9 +4,11 @@ An educational, from-scratch implementation of the **GCG adversarial attack**
 (Zou et al., 2023, *Universal and Transferable Adversarial Attacks on Aligned
 Language Models*) on a tiny **NumPy-only** GPT.
 
-**▶ Live visual demo (animated):** https://columnback.github.io/tinygpt-gcg/ —
+**▶ Live visual demo (animated):**
+[한국어](https://columnback.github.io/tinygpt-gcg/) ·
+[English](https://columnback.github.io/tinygpt-gcg/en/) —
 watch a crafted input steer the model into a refund or ransomware payload
-(source: [`docs/index.html`](docs/index.html)).
+(source: [`docs/index.html`](docs/index.html), [`docs/en/index.html`](docs/en/index.html)).
 
 The threat model is the realistic one: **an attacker can only choose the model's
 *input*, and through it steer the model's *output*.** GCG searches for a short
