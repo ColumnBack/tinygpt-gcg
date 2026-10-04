@@ -53,15 +53,17 @@ SPECIAL = ("<BOS>", "<EOS>", "<UNK>")
 def build_input(
     bos_id,
     prompt,
-    target
+    target,
+    prefix=()
 ):
 
-    ids = [bos_id] + list(prompt) + list(target[:-1])
+    # ids = <BOS> + [fixed natural prefix] + [adversarial suffix] + target[:-1]
+    ids = [bos_id] + list(prefix) + list(prompt) + list(target[:-1])
 
-    k = len(prompt)
+    start = len(prefix) + len(prompt)
 
     positions = list(
-        range(k, k + len(target))
+        range(start, start + len(target))
     )
 
     return ids, positions
@@ -82,10 +84,11 @@ def target_loss(
     model,
     bos_id,
     prompt,
-    target
+    target,
+    prefix=()
 ):
 
-    ids, positions = build_input(bos_id, prompt, target)
+    ids, positions = build_input(bos_id, prompt, target, prefix)
 
     logits, _, _ = model.forward(ids)
 
@@ -99,10 +102,11 @@ def target_loss(
 def next_token_probs(
     model,
     bos_id,
-    prompt
+    prompt,
+    prefix=()
 ):
 
-    logits, _, _ = model.forward([bos_id] + list(prompt))
+    logits, _, _ = model.forward([bos_id] + list(prefix) + list(prompt))
 
     return np.exp(log_softmax(logits[-1]))
 
@@ -125,6 +129,9 @@ def gcg(
     allow_target=False,
     init=None,
     seed=0,
+    fluency=0.0,
+    only=None,
+    prefix=None,
     verbose=False
 ):
 
@@ -132,6 +139,18 @@ def gcg(
 
     V = model.V
     bos_id = token_to_id["<BOS>"]
+
+    # Fixed, natural prompt prefix (attacker's real request). GCG does NOT
+    # optimise it; only the k adversarial suffix tokens are searched. The
+    # final input is [prefix] + [suffix], so most of it reads naturally.
+    prefix_ids = (
+        [token_to_id[w] for w in prefix if w in token_to_id]
+        if prefix else []
+    )
+    mp = len(prefix_ids)
+
+    def pwords(ids_list):
+        return " ".join(id_to_token[int(t)] for t in ids_list)
 
     # ---------------------------------------------------------------
     # Tokens the prompt may not use
@@ -148,7 +167,20 @@ def gcg(
     if not allow_target:
         forbidden[list(target)] = True
 
+    # Optional: restrict the search to a given set of words, so the
+    # trigger can only be built from, say, an innocent shopping-support
+    # vocabulary. GCG still does the search and ordering; it just cannot
+    # reach for weird or topic-giveaway tokens.
+    if only:
+        keep = {token_to_id[w] for w in only if w in token_to_id}
+        for v in range(V):
+            if v not in keep:
+                forbidden[v] = True
+
     allowed = np.flatnonzero(~forbidden)
+
+    if allowed.size == 0:
+        raise ValueError("no allowed tokens (check --only words are in the vocabulary)")
 
     # ---------------------------------------------------------------
     # Initial prompt
@@ -184,7 +216,9 @@ def gcg(
 
         return float(np.exp(-m * l))
 
-    loss = target_loss(model, bos_id, prompt, target)
+    loss = target_loss(model, bos_id, prompt, target, prefix_ids)
+
+    pref_disp = (pwords(prefix_ids) + " + ") if mp else ""
 
     best_prompt = list(prompt)
     best_loss = loss
@@ -202,7 +236,7 @@ def gcg(
 
     print(
         f"  init        | loss {loss:7.4f} | P(target) {joint(loss):.4f} | "
-        f"{words(prompt)}"
+        f"{pref_disp}{words(prompt)}"
     )
 
     t0 = time.time()
@@ -214,7 +248,7 @@ def gcg(
         #    backprop to the embedding input, project onto the vocab.
         # ===========================================================
 
-        ids, positions = build_input(bos_id, prompt, target)
+        ids, positions = build_input(bos_id, prompt, target, prefix_ids)
 
         _, GW = model.target_loss_and_token_grad(
             ids,
@@ -222,8 +256,25 @@ def gcg(
             target
         )
 
-        # rows 1..k are the prompt (row 0 is <BOS>)
-        G = GW[1:k + 1].copy()
+        # suffix rows: after <BOS> (1) and the fixed prefix (mp)
+        G = GW[1 + mp:1 + mp + k].copy()
+
+        # ----------------------------------------------------------
+        # Fluency bias (readable-attack / AutoDAN style).
+        #
+        # Plain GCG minimises only the attack loss, so it picks weird
+        # tokens. To steer toward a NATURAL-reading trigger, subtract
+        # the model's own next-token log-prob at each slot: tokens the
+        # model finds likely in that position score better. The final
+        # pick is still chosen by EXACT loss, so effectiveness holds;
+        # fluency only reshapes which candidates are considered.
+        #   slot j (prompt[j]) sits at ids index 1+j, predicted by
+        #   logits[j], so F = log_softmax(logits[0:k]).
+        # ----------------------------------------------------------
+        if fluency > 0.0:
+            logits_f, _, _ = model.forward(ids)
+            F = log_softmax(logits_f[mp:mp + k])
+            G = G - fluency * F
 
         G[:, forbidden] = np.inf
 
@@ -293,7 +344,7 @@ def gcg(
         cand_list = list(candidates)
 
         cand_loss = np.array([
-            target_loss(model, bos_id, c, target)
+            target_loss(model, bos_id, c, target, prefix_ids)
             for c in cand_list
         ])
 
@@ -316,12 +367,12 @@ def gcg(
             best_loss = loss
             best_step = step
 
-        probs = next_token_probs(model, bos_id, prompt)
+        probs = next_token_probs(model, bos_id, prompt, prefix_ids)
         argmax = id_to_token[int(np.argmax(probs))]
 
         print(
             f"  step {step:4d}   | loss {loss:7.4f} | P(target) {joint(loss):.4f} | "
-            f"{words(prompt, changed):<40s} | argmax next: {argmax}"
+            f"{pref_disp}{words(prompt, changed):<40s} | argmax next: {argmax}"
             + ("  *best" if improved else "")
         )
 
@@ -351,6 +402,8 @@ def gcg(
 
     return {
         "prompt": best_prompt,
+        "prefix": prefix_ids,
+        "full": prefix_ids + best_prompt,
         "loss": best_loss,
         "p": joint(best_loss),
         "steps": step,
@@ -488,13 +541,20 @@ def report(
 ):
 
     bos_id = token_to_id["<BOS>"]
-    prompt = result["prompt"]
+    prompt = result.get("full", result["prompt"])   # full input = prefix + suffix
 
     probs = next_token_probs(model, bos_id, prompt)
     order = np.argsort(-probs)[:5]
 
     print()
-    print(f"  best prompt : {' '.join(id_to_token[int(t)] for t in prompt)}")
+    print(f"  full input  : {' '.join(id_to_token[int(t)] for t in prompt)}")
+
+    pre = result.get("prefix") or []
+    if pre:
+        suf = result["prompt"]
+        print(f"     = prefix (natural, fixed): {' '.join(id_to_token[int(t)] for t in pre)}")
+        print(f"       + suffix (GCG-found)    : {' '.join(id_to_token[int(t)] for t in suf)}")
+
     print(f"  P(target)   : {result['p']:.4f}  (loss {result['loss']:.4f})")
 
     if len(target) > 1:
@@ -574,13 +634,20 @@ def run(
         print("Not in the vocabulary:", ", ".join(unknown))
         return
 
+    prefix_words = args.prefix.split() if args.prefix else []
+    unknown_pre = [w for w in prefix_words if w not in token_to_id]
+    if unknown_pre:
+        print("Prefix words not in the vocabulary:", ", ".join(unknown_pre))
+        return
+    mp = len(prefix_words)
+
     summary = []
 
     for k in ks:
 
-        if k < 1 or k + len(target) > model.max_context:
+        if k < 1 or mp + k + len(target) > model.max_context:
 
-            print(f"k={k}: must be 1..{model.max_context - len(target)}")
+            print(f"k={k}: must be 1..{model.max_context - len(target) - mp}")
             continue
 
         print()
@@ -601,6 +668,9 @@ def run(
             stop_prob=args.stop_prob,
             allow_target=args.allow_target,
             seed=args.seed,
+            fluency=args.fluency,
+            only=(args.only.split() if args.only else None),
+            prefix=(prefix_words if prefix_words else None),
             verbose=args.verbose
         )
 
@@ -637,7 +707,7 @@ def run(
             print(
                 f"  k={k:2d} | P(target) {r['p']:.4f} | steps {r['steps']:4d} | "
                 f"{r['time']:5.1f}s | "
-                f"{' '.join(id_to_token[int(t)] for t in r['prompt'])}"
+                f"{' '.join(id_to_token[int(t)] for t in r.get('full', r['prompt']))}"
                 + (f"   (exhaustive best P {brute:.4f})" if brute is not None else "")
             )
 
@@ -648,6 +718,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--model", type=Path, default=Path(__file__).with_name("model.npz"))
     parser.add_argument("--target", type=str, help="target word (or words)")
+    parser.add_argument("--prefix", type=str, default=None,
+                        help="fixed natural prompt placed before the adversarial suffix (only the suffix is searched)")
     parser.add_argument("--k", type=int, nargs="+", help="numbers of prompt tokens, e.g. 1 2 3 4")
     parser.add_argument("--steps", type=int, default=300, help="max GCG iterations")
     parser.add_argument("--batch", type=int, default=64, help="candidates per iteration (B)")
@@ -657,6 +729,10 @@ if __name__ == "__main__":
     parser.add_argument("--allow-target", action="store_true", help="allow the target word inside the prompt")
     parser.add_argument("--brute", action="store_true", help="also run exhaustive search for k <= 2")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--fluency", type=float, default=0.0,
+                        help="fluency bias: >0 prefers natural-reading triggers (e.g. 2.0)")
+    parser.add_argument("--only", type=str, default=None,
+                        help="restrict the trigger to these space-separated words, e.g. a natural vocabulary")
     parser.add_argument("--verbose", action="store_true", help="print the gradient top-k at every step")
     parser.add_argument("--check", action="store_true", help="gradient check of dL/dW and exit")
 
