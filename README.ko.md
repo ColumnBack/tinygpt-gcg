@@ -1,11 +1,11 @@
 # TinyGPT-GCG — NumPy GPT에서 보는 Greedy Coordinate Gradient 데모
 
+[English](README.md) | **한국어**
+
 > [!IMPORTANT]
 > **📐 [GCG math.pdf](GCG%20math.pdf) — GCG 공격을 손으로 유도한 노트** (입력 구성, 마스킹된 타깃 손실, 토큰 선택)  
 > **📐 [GPT math.pdf](GPT%20math.pdf) — 기반 모델을 손으로 유도한 노트** (모든 순전파·역전파 공식)  
 > 코드는 이 유도 과정을 그대로 따릅니다.
-
-[English](README.md) | **한국어**
 
 [라이브 데모](https://columnback.github.io/tinygpt-gcg/)
 

@@ -1,11 +1,11 @@
 # TinyGPT-GCG — a Greedy Coordinate Gradient demo on a NumPy GPT
 
+**English** | [한국어](README.ko.md)
+
 > [!IMPORTANT]
 > **📐 [GCG math.pdf](GCG%20math.pdf) — handwritten derivation of the GCG attack** (input composition, masked target loss, token selection)  
 > **📐 [GPT math.pdf](GPT%20math.pdf) — handwritten derivation of the base model** (every forward and backward formula)  
 > The code follows these derivations.
-
-**English** | [한국어](README.ko.md)
 
 [Live demo](https://columnback.github.io/tinygpt-gcg/en/)
 
