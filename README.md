@@ -1,14 +1,19 @@
 # TinyGPT-GCG — a Greedy Coordinate Gradient demo on a NumPy GPT
 
+> [!IMPORTANT]
+> **📐 [GCG math.pdf](GCG%20math.pdf) — handwritten derivation of the GCG attack** (input composition, masked target loss, token selection)  
+> **📐 [GPT math.pdf](GPT%20math.pdf) — handwritten derivation of the base model** (every forward and backward formula)  
+> The code follows these derivations.
+
+**English**  
+[Live demo](https://columnback.github.io/tinygpt-gcg/en/)
+
+**[한국어](README.ko.md)**  
+[라이브 데모](https://columnback.github.io/tinygpt-gcg/)
+
 An educational, from-scratch implementation of the **GCG adversarial attack**
 (Zou et al., 2023, *Universal and Transferable Adversarial Attacks on Aligned
 Language Models*) on a tiny **NumPy-only** GPT.
-
-**▶ Live visual demo (animated):**
-[한국어](https://columnback.github.io/tinygpt-gcg/) ·
-[English](https://columnback.github.io/tinygpt-gcg/en/) —
-watch a crafted input steer the model into a refund or ransomware payload
-(source: [`docs/index.html`](docs/index.html), [`docs/en/index.html`](docs/en/index.html)).
 
 The threat model is the realistic one: **an attacker can only choose the model's
 *input*, and through it steer the model's *output*.** GCG searches for a short
@@ -99,6 +104,7 @@ target `y`, with input `u = p ‖ a ‖ y_{1:K-1}` and `T = m+n+K-1`:
 | [`gradcheck.py`](gradcheck.py) / [`tf_gradcheck.py`](tf_gradcheck.py) | Model gradient checks (base) |
 | [`GPT math.pdf`](GPT%20math.pdf) | Base model forward/backward derivation |
 | `model.npz` | Trained weights |
+| [`docs/`](docs) | Animated demo pages for GitHub Pages: Korean [`docs/index.html`](docs/index.html), English [`docs/en/index.html`](docs/en/index.html) |
 
 ## Quick start — two scripts
 
