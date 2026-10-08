@@ -5,11 +5,9 @@
 > **📐 [GPT math.pdf](GPT%20math.pdf) — handwritten derivation of the base model** (every forward and backward formula)  
 > The code follows these derivations.
 
-**English**  
-[Live demo](https://columnback.github.io/tinygpt-gcg/en/)
+**English** | [한국어](README.ko.md)
 
-**[한국어](README.ko.md)**  
-[라이브 데모](https://columnback.github.io/tinygpt-gcg/)
+[Live demo](https://columnback.github.io/tinygpt-gcg/en/)
 
 An educational, from-scratch implementation of the **GCG adversarial attack**
 (Zou et al., 2023, *Universal and Transferable Adversarial Attacks on Aligned

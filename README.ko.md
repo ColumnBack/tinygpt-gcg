@@ -5,10 +5,8 @@
 > **📐 [GPT math.pdf](GPT%20math.pdf) — 기반 모델을 손으로 유도한 노트** (모든 순전파·역전파 공식)  
 > 코드는 이 유도 과정을 그대로 따릅니다.
 
-**[English](README.md)**  
-[Live demo](https://columnback.github.io/tinygpt-gcg/en/)
+[English](README.md) | **한국어**
 
-**한국어**  
 [라이브 데모](https://columnback.github.io/tinygpt-gcg/)
 
 **NumPy만으로** 만든 작은 GPT 위에 **GCG 적대적 공격**
