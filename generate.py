@@ -104,8 +104,11 @@ def interactive(
 
         try:
 
-            # Strip the BOM that piped input may carry
-            text = input("\n> ").replace("﻿", "").strip().lower()
+            # Strip the BOM that piped input may carry. No .lower(): the
+            # vocabulary is case-sensitive (e.g. the REFUND / SIMULATION
+            # tokens), matching gcg.py, so a trigger with uppercase tokens
+            # works verbatim.
+            text = input("\n> ").replace("﻿", "").strip()
 
         except (EOFError, KeyboardInterrupt):
 
